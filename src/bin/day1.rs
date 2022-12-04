@@ -4,7 +4,7 @@ pub fn input_generator(input: &str) -> Vec<&str> {
     input.trim().split("\n\n").collect()
 }
 
-pub fn solve_part1(input: Vec<&str>) -> usize {
+pub fn solve_part2(input: Vec<&str>) -> usize {
     input
         .iter()
         .map(|elf| -> usize {
@@ -26,7 +26,7 @@ fn main() {
     20
 
     40";
-    dbg!(solve_part1(input_generator(test_input)));
+    dbg!(solve_part2(input_generator(test_input)));
     let test_input2 = "20
     30
 
@@ -36,6 +36,6 @@ fn main() {
 
     70
     80";
-    dbg!(solve_part1(input_generator(test_input2)));
-    dbg!(solve_part1(input_generator(INPUT)));
+    dbg!(solve_part2(input_generator(test_input2)));
+    dbg!(solve_part2(input_generator(INPUT)));
 }
