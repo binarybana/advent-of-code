@@ -1,34 +1,20 @@
+use itertools::Itertools;
+
 pub fn input_generator(input: &str) -> Vec<&str> {
-    input.trim().split('\n').collect()
+    input.trim().split("\n\n").collect()
 }
 
 pub fn solve_part1(input: Vec<&str>) -> usize {
-    let mut elves = input
+    input
         .iter()
-        .map(|cals| cals.trim().parse::<usize>().ok())
-        .collect::<Vec<Option<usize>>>()
-        .split(|x| x.is_none())
-        .map(|x| x.iter().map(|val| val.unwrap()).sum())
-        .collect::<Vec<usize>>();
-    elves.sort();
-    let elves_len = elves.len();
-    dbg!(*&elves[elves_len - 3..].iter().sum::<usize>())
-    // let mut cals = 0;
-    // let mut biggest_cals = 0;
-    // for val in input {
-    //     if val.trim().len() != 0 {
-    //         cals += val.trim().parse::<usize>().unwrap();
-    //     } else {
-    //         if cals > biggest_cals {
-    //             biggest_cals = cals;
-    //         }
-    //         cals = 0;
-    //     }
-    // }
-    // if cals > biggest_cals {
-    //     biggest_cals = cals;
-    // }
-    // biggest_cals
+        .map(|elf| -> usize {
+            elf.lines()
+                .map(|cals| cals.trim().parse::<usize>().unwrap())
+                .sum()
+        })
+        .sorted_by(|a, b| b.cmp(a))
+        .take(3)
+        .sum()
 }
 
 fn main() {
