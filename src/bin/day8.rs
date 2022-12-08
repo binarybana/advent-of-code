@@ -1,89 +1,146 @@
-use itertools::Itertools;
-use std::collections::HashMap;
+// use itertools::Itertools;
+// use std::collections::HashMap;
 // use regex::Regex;
-
-pub fn get_sizes(input: &str) -> HashMap<String, usize> {
-    let mut pos: Vec<String> = Vec::new();
-    let mut sizes = HashMap::<String, usize>::new();
-    for line in input.lines() {
-        if line.starts_with("$ cd /") {
-            pos.clear();
-        } else if line.starts_with("$ cd ..") {
-            pos.pop();
-        } else if line.starts_with("$ cd ") {
-            pos.push(line.trim().split(' ').last().unwrap().into());
-        } else if line.starts_with("dir") || line.starts_with("$ ls") {
-            continue;
-        } else {
-            let size = line
+#[derive(Debug)]
+pub struct TreeMap(Vec<Vec<Tree>>);
+impl TreeMap {
+    fn from(input: &str) -> TreeMap {
+        TreeMap(
+            input
                 .trim()
-                .split(' ')
-                .next()
-                .unwrap()
-                .parse::<usize>()
-                .unwrap();
-            let mut pos_clone = pos.clone();
-            loop {
-                let dir = pos_clone.iter().join(":").clone();
-                let entry = sizes.entry(dir).or_insert(0);
-                *entry += size;
-                let popped = pos_clone.pop();
-                if popped.is_none() {
-                    break;
-                }
+                .lines()
+                .map(|line| {
+                    line.chars()
+                        .map(|c| {
+                            let height = c.to_digit(10).unwrap();
+                            Tree {
+                                height: height as isize,
+                                visible: false,
+                                score: 1,
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<Vec<Tree>>>(),
+        )
+    }
+}
+#[derive(Debug)]
+pub struct Tree {
+    height: isize,
+    visible: bool,
+    score: usize,
+}
+
+pub fn solve_p1(input: &str) -> usize {
+    let mut map = TreeMap::from(input);
+    let DIM = map.0[0].len();
+    for i in 0..DIM {
+        let mut visibility = -1;
+        for j in 0..DIM {
+            if map.0[i][j].height > visibility {
+                map.0[i][j].visible = true;
+                visibility = map.0[i][j].height;
             }
         }
     }
-    sizes
-}
-pub fn solve_p1(input: &str) -> usize {
-    let sizes = get_sizes(input);
-    sizes
-        .into_iter()
-        .filter_map(|(_, v)| if v <= 100_000 { Some(v) } else { None })
+    for i in 0..DIM {
+        let mut visibility = -1;
+        for j in (0..DIM).rev() {
+            if map.0[i][j].height > visibility {
+                map.0[i][j].visible = true;
+                visibility = map.0[i][j].height;
+            }
+        }
+    }
+    for j in 0..DIM {
+        let mut visibility = -1;
+        for i in 0..DIM {
+            if map.0[i][j].height > visibility {
+                map.0[i][j].visible = true;
+                visibility = map.0[i][j].height;
+            }
+        }
+    }
+    for j in 0..DIM {
+        let mut visibility = -1;
+        for i in (0..DIM).rev() {
+            if map.0[i][j].height > visibility {
+                map.0[i][j].visible = true;
+                visibility = map.0[i][j].height;
+            }
+        }
+    }
+    // dbg!(&map);
+    map.0
+        .iter()
+        .flatten()
+        .map(|t| if t.visible { 1 } else { 0 })
         .sum()
 }
 
-const TOTAL_SPACE: usize = 70000000;
-const NEEDED_SPACE: usize = 30000000;
-
 pub fn solve_p2(input: &str) -> usize {
-    let sizes = get_sizes(input);
-    let used_space = sizes.get("").unwrap();
-    assert!(NEEDED_SPACE > (TOTAL_SPACE - used_space));
-    let space_to_clear = NEEDED_SPACE - (TOTAL_SPACE - used_space);
-    let mut sizes = sizes.iter().collect::<Vec<_>>();
-    sizes.sort_by_key(|(_, &v)| v);
-    *sizes.iter().find(|(_, v)| **v > space_to_clear).unwrap().1
+    let mut map = TreeMap::from(input);
+    let DIM = map.0[0].len() as isize;
+    for i in 1..(DIM - 1) {
+        for j in 1..(DIM - 1) {
+            let mut score = 0;
+            let my_height = map.0[i as usize][j as usize].height;
+            for ind in (j + 1)..DIM {
+                if map.0[i as usize][ind as usize].height < my_height {
+                    score += 1;
+                } else {
+                    score += 1;
+                    break;
+                }
+            }
+            map.0[i as usize][j as usize].score *= score;
+            score = 0;
+            for ind in (0..=(j - 1)).rev() {
+                if map.0[i as usize][ind as usize].height < my_height {
+                    score += 1;
+                } else {
+                    score += 1;
+                    break;
+                }
+            }
+            map.0[i as usize][j as usize].score *= score;
+            score = 0;
+            for ind in (i + 1)..DIM {
+                if map.0[ind as usize][j as usize].height < my_height {
+                    score += 1;
+                } else {
+                    score += 1;
+                    break;
+                }
+            }
+            map.0[i as usize][j as usize].score *= score;
+            score = 0;
+            for ind in (0..=(i - 1)).rev() {
+                if map.0[ind as usize][j as usize].height < my_height {
+                    score += 1;
+                } else {
+                    score += 1;
+                    break;
+                }
+            }
+            map.0[i as usize][j as usize].score *= score;
+        }
+    }
+    let mut map = map.0.iter().flatten().collect::<Vec<_>>();
+    map.sort_by_key(|t| -(t.score as isize));
+    map[0].score
 }
 
 fn main() {
-    let test_input = "$ cd /
-$ ls
-dir a
-14848514 b.txt
-8504156 c.dat
-dir d
-$ cd a
-$ ls
-dir e
-29116 f
-2557 g
-62596 h.lst
-$ cd e
-$ ls
-584 i
-$ cd ..
-$ cd ..
-$ cd d
-$ ls
-4060174 j
-8033020 d.log
-5626152 d.ext
-7214296 k";
-    assert_eq!(solve_p1(test_input), 95437);
-    assert_eq!(solve_p2(test_input), 24933642);
-    const INPUT: &'static str = include_str!("../../input/2022/day7.txt");
+    let test_input = "30373
+25512
+65332
+33549
+35390";
+    assert_eq!(solve_p1(test_input), 21);
+    assert_eq!(solve_p2(test_input), 8);
+    const INPUT: &'static str = include_str!("../../input/2022/day8.txt");
     dbg!(solve_p1(INPUT));
     dbg!(solve_p2(INPUT));
 }
